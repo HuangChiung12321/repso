@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+        <title></title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+        <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+        <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    </head>
+
+    <body>
+        <header></header>
+        <section>
+        <div class="container">
+            <form id="form">
+                <p>Chọn</p>
+                <select class="form-select pt-1 mt-3" id="myList" onchange="myFunction()">
+                  <option>Lọc trung vị</option>
+                  <option>Lọc trung bình</option>
+                  <option>Nhân chập</option>
+                  <option>Co</option>
+                  <option>Giãn</option>
+                  <option>Đóng</option>
+                  <option>Mở</option>
+                  <option>Histogram</option>
+                  <option>Histogram1</option>
+                  <option>HistogramopenCV2</option>
+                  <option>MSE</option>
+                  <option>SNR</option>
+                </select>
+                <div class='form-group'>
+                    <label for="">Nhập mảng : </label>
+                    <textarea id="array" class="form-control" value=""></textarea>
+                </div>
+
+
+                <div id="form_fr" style="display: none;">
+                    <label for="field1">Kích thước nhân: </label>
+                     <input type="text" id="kernelsize" class="form-control" value="3">
+                    <label for="field1">Có bù:</label>
+                    
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="csame" name="optradio" value="option1" checked>
+                        <label class="form-check-label" for="radio1">same</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="cvalid" name="optradio" value="option2">
+                        <label class="form-check-label" for="radio2">valid</label>
+                    </div>
+                </div>
+
+                <div id="form_fr1" style="display: none;">
+                    <label for="field1">Kích thước nhân: </label>
+                     <input type="text" id="kernelsize1" class="form-control" value="3">
+                    <label for="field1">Có bù:</label>
+                    
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="cdiamond" name="optradio" value="option1" checked>
+                        <label class="form-check-label" for="radio1">Hình kim cương</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="csquare" name="optradio" value="option2">
+                        <label class="form-check-label" for="radio2">Hình vuông</label>
+                    </div>
+                </div>
+
+                <div id="form_fr2" style="display: none;">
+                    <label for="">Nhập mảng 2: </label>
+                    <textarea id="array2" class="form-control" value=""></textarea>
+                    
+                    <label for="field1">Có bù:</label>    
+                    <div>                
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="csame1" name="optradio" value="option1" checked>
+                        <label class="form-check-label" for="radio1">same</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="cvalid1" name="optradio" value="option2">
+                        <label class="form-check-label" for="radio2">valid</label>
+                    </div>
+                    </div>
+                    <div>
+                    <label for="type">Kiểu dữ lieu:</label>                    
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="integer" name="optradio1" value="option3"  checked>
+                        <label class="form-check-label" for="radio3">int</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="floats" name="optradio1" value="option4">
+                        <label class="form-check-label" for="radio4">float</label>
+                    </div>
+                    </div>
+                </div>
+
+                <div id="form_fr4" style="display: none;">
+                    <label for="type">Làm tròn:</label>                    
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="tt1" name="optradio1" value="option3"  >
+                        <label class="form-check-label" for="radio3">có</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="kttss2" name="optradio1" value="option4" checked>
+                        <label class="form-check-label" for="radio4">không</label>
+                    </div>
+                </div>
+                
+
+                <input type="button" value="Lọc" class="btn btn-primary   " id="do-math">
+            </form>
+
+            
+  
+        <py-config type="toml">
+            packages = ["matplotlib","opencv-python"] 
+ 
+        </py-config>
+        <py-script>
+            import numpy as np
+            from js import createObject
+            from pyodide.ffi import create_proxy
+            import matplotlib.pyplot as plt
+            import cv2
+            from js import document as _DOC
+            import re
+            
+            def convers(string):
+                string = re.sub(r'(?<=\[|\d)\s+(?=\d|\])', ',', string)
+                string = string.replace(';', ',')
+                string = re.sub(r'\,]', ']', string)
+                string = re.sub(r'\[,', '[', string)
+                return string
+
+
+
+            def mean_Filter(matrix, type='valid', kernel_size=3, type1='int'):
+                kernel = np.ones((kernel_size, kernel_size), np.float32)/(kernel_size ** 2)
+
+                nmatrix = np.array(eval(matrix), dtype=float)
+                nmatrix = cv2.filter2D(src=nmatrix, ddepth=-1, kernel=kernel, borderType=cv2.BORDER_CONSTANT)
+
+                nmatrix1 = np.array(eval(matrix), dtype=np.uint16)   
+                nmatrix1 = cv2.filter2D(src=nmatrix1, ddepth=-1,
+                                kernel=kernel, borderType=cv2.BORDER_CONSTANT)
+
+                if (type == 'valid'):
+                    padding = int((kernel_size - 1) / 2)
+                    nmatrix = nmatrix[padding:-padding, padding:-padding]
+                    nmatrix1 = nmatrix1[padding:-padding, padding:-padding]
+
+                np.set_printoptions(precision=5, floatmode='fixed')
+                if (type1 == "float"):
+                    return nmatrix
+
+                return nmatrix1
+
+            def median_filter(image, type='valid', kernel_size=3):
+                image = np.array(eval(image))
+                image = image.astype(np.uint16)
+                border_size = kernel_size // 2
+
+                # Add border of zeros to the image
+                bordered_image = cv2.copyMakeBorder(image, border_size, border_size, border_size, border_size, cv2.BORDER_CONSTANT, value=0)
+
+                # Apply median filter
+                filtered_image = cv2.medianBlur(bordered_image, kernel_size)
+
+                return filtered_image
+            
+            def erode(data, size=3, type='diamond'):
+                if isinstance(data, str):
+                    data = eval(data)
+                image = np.array(data,dtype=np.uint8)
+                if(type=='diamond'):
+                    x, y = np.meshgrid(np.arange(size), np.arange(size))
+                else:
+                    x,y=np.meshgrid(np.ones(size),np.ones(size))
+                    
+                structuring_element = np.abs(x - (size-1)//2) + np.abs(y - (size-1)//2) <= (size-1)//2
+                eroded_image = cv2.erode(image, structuring_element.astype(np.uint8), iterations=1)
+                return eroded_image
+            
+            
+            def dilate(data, size=3, type='diamond'):
+                if isinstance(data, str):
+                    data = eval(data)
+                image = np.array(data,dtype=np.uint8)  
+                if(type=='diamond'):
+                    x, y = np.meshgrid(np.arange(size), np.arange(size))
+                else:
+                    x,y=np.meshgrid(np.ones(size),np.ones(size))
+            
+                structuring_element = np.abs(x - (size-1)//2) + np.abs(y - (size-1)//2) <= (size-1)//2
+                dila_image = cv2.dilate(image, structuring_element.astype(np.uint8), iterations=1)
+                return dila_image
+
+            def open(data, size=3, type='diamond'):
+                image = erode(data,size,type)
+                image = dilate(image,size,type)
+                return image
+            
+            def close(data, size=3, type='diamond'):
+                image = dilate(data,size,type)
+                image = erode(image,size,type)
+                return image
+            
+            def covolutions(matrix, kernel , type='valid',type1='int'):
+                print(type)
+                kernel = np.array(eval(kernel) , np.uint16)
+                kernel_size = kernel.shape[0]
+
+                nmatrix = np.array(eval(matrix), dtype=float)
+                nmatrix = cv2.filter2D(src=nmatrix, ddepth=-1, kernel=kernel, borderType=cv2.BORDER_CONSTANT)
+
+                nmatrix1 = np.array(eval(matrix), dtype=np.uint16)   
+                nmatrix1 = cv2.filter2D(src=nmatrix1, ddepth=-1,
+                                kernel=kernel, borderType=cv2.BORDER_CONSTANT)
+
+                if (type == 'valid'):
+                    padding = int((kernel_size - 1) / 2)
+                    nmatrix = nmatrix[padding:-padding, padding:-padding]
+                    nmatrix1 = nmatrix1[padding:-padding, padding:-padding]
+
+                np.set_printoptions(precision=5, floatmode='fixed')
+                if (type1 == "float"):
+                    return nmatrix
+
+                return nmatrix1
+            
+            def histogram_equalization(matrix):
+                matrix = np.array(eval(matrix),dtype='uint16')
+                flattened = matrix.flatten()
+                histogram, bins = np.histogram(flattened, bins=256, range=(0, 256))
+                cdf = histogram.cumsum()
+                cdf_normalized = cdf * 255 / cdf[-1]
+                equalized = np.interp(flattened, bins[:-1], cdf_normalized)
+                equalized_matrix = equalized.reshape(matrix.shape)
+                return equalized_matrix
+            
+            def histogram1(image, round='false'):
+                image = np.array(eval(image),dtype='uint16')
+                histogram, _ = np.histogram(image.flatten(), bins=256, range=[0, 256])
+            
+                cumulative_histogram = histogram.cumsum()
+            
+                N = image.shape[0] * image.shape[1]  # Total number of pixels
+                L = np.max(image)  # Maximum intensity value
+                normalization_factor = L / N
+            
+                # Calculate the normalized cumulative histogram
+                if(round=='true'):
+                    normalized_cumulative_histogram = np.round(
+                cumulative_histogram * normalization_factor)
+                else:
+                    normalized_cumulative_histogram = (
+                cumulative_histogram * normalization_factor).astype('uint16')
+                equalized_image = normalized_cumulative_histogram[image]
+                return equalized_image
+
+            
+            def MSE(actual_values,predicted_values):
+                actual_values = np.array(eval(actual_values))
+                predicted_values = np.array(eval(predicted_values))
+                mse = np.mean((actual_values - predicted_values) ** 2)
+                return mse
+
+
+            
+            def histogram_equalizationcv2(matrix):
+                matrix = np.array(eval(matrix),dtype=np.uint8)
+                equalized_image = cv2.equalizeHist(matrix)
+                return equalized_image
+                
+
+            def SNRs(actual_values,predicted_values):
+                actual_values = np.array(eval(actual_values))
+                predicted_values = np.array(eval(predicted_values))
+                snr = np.sum(predicted_values ** 2) / np.sum((actual_values - predicted_values) ** 2)
+                return snr
+
+            def results(r):
+                print(r)
+            
+            def clear():
+                ter = _DOC.getElementById("terminals") 
+                ter.innerHTML = "<" + "pre class='py-terminal'>"+ "<" +"/pre>"
+            
+            def res(s):
+                ter = _DOC.getElementById("terminals") 
+                ter.innerHTML = "<" + "pre class='py-terminal'>"+ str(s) + "<" +"/pre>"
+            
+            createObject(create_proxy(globals()), "pyodideGlobals")
+        </py-script>
+        <!-- <py-repl class="replt">
+            paragraph
+        </py-repl> -->
+        <py-terminal id="terminals"></py-terminal>
+        </div>
+    </section>
+    <footer></footer>
+    
+    <script>
+        function createObject(object, variableName){
+            let execString = variableName + " = object"
+            eval(execString)
+        }
+
+        function reset(){
+            const checkbox = document.getElementById('csame');
+            const checkboxs = document.getElementById('cvalid');
+            checkbox.checked = false;
+            checkboxs.checked = false;
+            const checkbox1 = document.getElementById('cdiamond');
+            const checkboxs1 = document.getElementById('csquare');
+            checkbox1.checked = false;
+            checkboxs1.checked = false;
+            const checkbox3 = document.getElementById('integer');
+            const checkboxs4 = document.getElementById('floats');  
+            checkbox3.checked = false;
+            checkboxs4.checked = false;
+            const checkbox6 = document.getElementById('tt1');
+            const checkboxs8 = document.getElementById('kttss2');  
+            checkbox6.checked = false;
+            checkboxs8.checked = false;
+        }
+
+
+        function myFunction() {
+            reset();
+            var mylist = document.getElementById("myList").value;
+            var parent = document.getElementById("form");
+            var forms = document.getElementById("form_fr");
+            var forms1 = document.getElementById("form_fr1");
+            var forms2 = document.getElementById("form_fr2");
+            var forms3 = document.getElementById("form_fr4");
+            forms.style.display='none';
+            forms1.style.display='none';
+            forms2.style.display='none';
+            forms3.style.display='none';
+            if((mylist == "Lọc trung vị") || (mylist == "Lọc trung bình")) {
+                forms.style.display = 'block';
+            }
+            else if((mylist == "Co") || (mylist == "Giãn") || (mylist == "Mở") || (mylist == "Đóng")) {
+                forms1.style.display = 'block';
+            }
+            else if((mylist == "Nhân chập")||(mylist == "MSE")||(mylist == "SNR")) {     
+                forms2.style.display = 'block';
+            }
+            else if((mylist == "Histogram1")) {
+                forms3.style.display = 'block';
+            }
+            
+        }
+    
+
+        function getParam() {
+            const checkbox = document.getElementById('csame');
+            const checkboxs = document.getElementById('cvalid');
+            if(checkbox.checked) 
+                return 'same';
+            if(checkboxs.checked) 
+                return'valid'; 
+        }
+
+        function getParams() {
+            const checkbox = document.getElementById('csame1');
+            const checkboxs = document.getElementById('cvalid1');
+            if(checkbox.checked) 
+                return 'same';
+            if(checkboxs.checked) 
+                return'valid'; 
+        }
+
+
+        function getParam1() {
+            const checkbox = document.getElementById('cdiamond');
+            const checkboxs = document.getElementById('csquare');
+            if(checkbox.checked) 
+                return 'diamond';
+            if(checkboxs.checked) 
+                return 'square'; 
+        }
+
+
+        function getParam2() {
+            const checkbox = document.getElementById('integer');
+            const checkboxs = document.getElementById('floats');
+            if(checkbox.checked) 
+                return 'int';
+            if(checkboxs.checked) 
+                return 'float'; 
+
+        }
+        
+        function getParam4() {     
+            const checkbox6 = document.getElementById('tt1');
+            const checkboxs8 = document.getElementById('kttss2');
+            if(checkbox6.checked) 
+                return 'true';
+            if(checkboxs8.checked) 
+                return 'false'; 
+
+        }
+        
+        document.getElementById("do-math").addEventListener("click", () => {
+            var mylist = document.getElementById("myList").value;
+            var x = document.getElementById("array").value;
+            var result = pyodideGlobals.get('');
+            var kernelsize = document.getElementById("kernelsize").value;
+            var kernelsize1 = document.getElementById("kernelsize1").value;
+            var dis = pyodideGlobals.get('results');
+            var check = null;
+            var check1 = null;
+            var check2 = null;
+            var check4 = null;
+
+            //convolutions 
+            var y = document.getElementById("array2").value;
+            
+
+            var cverts = pyodideGlobals.get('convers');
+            x = cverts(x);
+            y = cverts(y);
+            var cl = pyodideGlobals.get('res');
+            if(mylist == "Lọc trung vị"){
+                check = getParam();
+                result = pyodideGlobals.get('median_filter');
+                cl(result(x,check,parseInt(kernelsize)));
+            }
+            else if(mylist == "Lọc trung bình") {
+                check = getParam();
+                result = pyodideGlobals.get('mean_Filter');
+                cl(result(x,check,parseInt(kernelsize)));
+            }
+            else if(mylist == "Giãn"){
+                check1 = getParam1();
+                result = pyodideGlobals.get('dilate');
+                cl(result(x,parseInt(kernelsize1),check1));
+            }
+            else if(mylist == "Co"){
+                check1 = getParam1();
+                result = pyodideGlobals.get('erode');
+                cl(result(x,parseInt(kernelsize1),check1));
+            }
+            else if(mylist == "Mở"){
+                check1 = getParam1();
+                result = pyodideGlobals.get('open');
+                cl(result(x,parseInt(kernelsize1),check1));
+            }
+            else if(mylist == "Đóng"){
+                check1 = getParam1();
+                result = pyodideGlobals.get('close');
+                cl(result(x,parseInt(kernelsize1),check1));
+            }
+            else if(mylist == "Nhân chập") {
+                check = getParams();
+                check2 = getParam2();
+                result = pyodideGlobals.get('covolutions');
+                cl(result(x,y,check,check2));
+            }
+            else if(mylist == "Histogram") {
+                result = pyodideGlobals.get('histogram_equalization');
+                cl(result(x));
+            }
+            else if(mylist == "HistogramopenCV2") {
+                result = pyodideGlobals.get('histogram_equalizationcv2');
+                cl(result(x));
+            }
+            else if(mylist == "Histogram1") {
+                check4 = getParam4();
+                result = pyodideGlobals.get('histogram1');
+                cl(result(x,check4));
+            }
+            else if(mylist == "MSE") {
+                result = pyodideGlobals.get('MSE');
+                cl(result(x,y));
+            }
+            else if(mylist == "SNR") {
+                result = pyodideGlobals.get('SNRs');
+                cl(result(x,y));
+            }
+        });
+
+    </script>
+    </body>
+</html> 
+ 
